@@ -1,4 +1,6 @@
 /// Copyright (C) 2015 Brendan Duncan. All rights reserved.
+import 'package:flutter_fbx3d_viewer/fbx_parser/fbx/scene/fbx_anim_key.dart';
+
 import 'input_buffer.dart';
 import 'fbx_element.dart';
 import 'fbx_ascii_parser.dart';
@@ -8,7 +10,6 @@ import 'scene/fbx_anim_curve.dart';
 import 'scene/fbx_anim_curve_node.dart';
 import 'scene/fbx_anim_layer.dart';
 import 'scene/fbx_anim_stack.dart';
-import 'scene/fbx_anim_key.dart';
 import 'scene/fbx_camera.dart';
 import 'scene/fbx_cluster.dart';
 import 'scene/fbx_deformer.dart';
@@ -28,7 +29,7 @@ import 'scene/fbx_global_settings.dart';
 
 /// Decodes an FBX file into an [FbxScene] structure.
 class FbxLoader {
-  FbxScene load(List<int> bytes) {
+  FbxScene? load(List<int> bytes) {
     final input = InputBuffer(bytes);
 
     if (FbxBinaryParser.isValidFile(input)) {
@@ -41,10 +42,10 @@ class FbxLoader {
 
     final scene = FbxScene();
 
-    var elem = _parser.nextElement();
+    var elem = _parser?.nextElement();
     while (elem != null) {
       _loadRootElement(elem, scene);
-      elem = _parser.nextElement();
+      elem = _parser?.nextElement();
     }
 
     _parser = null;
@@ -53,8 +54,6 @@ class FbxLoader {
   }
 
   void _loadRootElement(FbxElement e, FbxScene scene) {
-    //logger("-----PARSER _loadRootElement " + e.id);
-
     if (e.id == 'FBXHeaderExtension') {
       _loadHeaderExtension(e, scene);
     } else if (e.id == 'GlobalSettings') {
@@ -73,13 +72,13 @@ class FbxLoader {
   }
 
   void _loadTakes(FbxElement e, FbxScene scene) {
-    String currentTake;
+    String? currentTake;
     for (final c in e.children) {
       if (c.id == 'Current') {
-        currentTake = c.properties[0] as String;
-      } else if(c.id == 'Take') {
+        currentTake = c.properties![0] as String?;
+      } else if (c.id == 'Take') {
         // TODO store multiple takes
-        if (c.properties[0] != currentTake) {
+        if (c.properties![0] != currentTake) {
           continue;
         }
 
@@ -88,13 +87,13 @@ class FbxLoader {
     }
   }
 
-  // Older FBX versions store animation in 'Takes'
+// Older FBX versions store animation in 'Takes'
   void _loadTake(FbxElement e, FbxScene scene) {
     for (final c in e.children) {
       if (c.id == 'Model') {
-        final name = c.properties[0] as String;
+        final name = c.properties![0] as String?;
 
-        final obj = scene.allObjects[name];
+        final obj = scene.allObjects[name!];
         if (obj == null) {
           print('Could not find object $name');
           continue;
@@ -110,57 +109,57 @@ class FbxLoader {
   }
 
   void _loadTakeChannel(FbxElement c, FbxObject obj, FbxScene scene) {
-    if (c.properties[0] == 'Transform') {
+    if (c.properties![0] == 'Transform') {
       for (final c2 in c.children) {
-        if (c2.properties[0] == 'T') {
-          final animNode = FbxAnimCurveNode(0, 'T', null, scene);
+        if (c2.properties![0] == 'T') {
+          final animNode = FbxAnimCurveNode(0, 'T', c, scene);
           obj.connectToProperty('Lcl Translation', animNode);
           for (final c3 in c2.children) {
-            if (c3.id == 'Channel' && c3.properties[0] == 'X') {
+            if (c3.id == 'Channel' && c3.properties![0] == 'X') {
               final animCurve = FbxAnimCurve(0, 'X', null, scene);
               animNode.connectToProperty('X', animCurve);
               _loadTakeCurve(c3, animCurve);
-            } else if (c3.id == 'Channel' && c3.properties[0] == 'Y') {
+            } else if (c3.id == 'Channel' && c3.properties![0] == 'Y') {
               final animCurve = FbxAnimCurve(0, 'Y', null, scene);
               animNode.connectToProperty('Y', animCurve);
               _loadTakeCurve(c3, animCurve);
-            } else if (c3.id == 'Channel' && c3.properties[0] == 'Z') {
+            } else if (c3.id == 'Channel' && c3.properties![0] == 'Z') {
               final animCurve = FbxAnimCurve(0, 'Z', null, scene);
               animNode.connectToProperty('Z', animCurve);
               _loadTakeCurve(c3, animCurve);
             }
           }
-        } else if (c2.properties[0] == 'R') {
-          final animNode = FbxAnimCurveNode(0, 'R', null, scene);
+        } else if (c2.properties![0] == 'R') {
+          final animNode = FbxAnimCurveNode(0, 'R', c, scene);
           obj.connectToProperty('Lcl Rotation', animNode);
           for (final c3 in c2.children) {
-            if (c3.id == 'Channel' && c3.properties[0] == 'X') {
+            if (c3.id == 'Channel' && c3.properties![0] == 'X') {
               final animCurve = FbxAnimCurve(0, 'X', null, scene);
               animNode.connectToProperty('X', animCurve);
               _loadTakeCurve(c3, animCurve);
-            } else if (c3.id == 'Channel' && c3.properties[0] == 'Y') {
+            } else if (c3.id == 'Channel' && c3.properties![0] == 'Y') {
               final animCurve = FbxAnimCurve(0, 'Y', null, scene);
               animNode.connectToProperty('Y', animCurve);
               _loadTakeCurve(c3, animCurve);
-            } else if (c3.id == 'Channel' && c3.properties[0] == 'Z') {
+            } else if (c3.id == 'Channel' && c3.properties![0] == 'Z') {
               final animCurve = FbxAnimCurve(0, 'Z', null, scene);
               animNode.connectToProperty('Z', animCurve);
               _loadTakeCurve(c3, animCurve);
             }
           }
-        } else if (c2.properties[0] == 'S') {
-          final animNode = FbxAnimCurveNode(0, 'S', null, scene);
+        } else if (c2.properties![0] == 'S') {
+          final animNode = FbxAnimCurveNode(0, 'S', c, scene);
           obj.connectToProperty('Lcl Scaling', animNode);
           for (final c3 in c2.children) {
-            if (c3.id == 'Channel' && c3.properties[0] == 'X') {
+            if (c3.id == 'Channel' && c3.properties![0] == 'X') {
               final animCurve = FbxAnimCurve(0, 'X', null, scene);
               animNode.connectToProperty('X', animCurve);
               _loadTakeCurve(c3, animCurve);
-            } else if (c3.id == 'Channel' && c3.properties[0] == 'Y') {
+            } else if (c3.id == 'Channel' && c3.properties![0] == 'Y') {
               final animCurve = FbxAnimCurve(0, 'Y', null, scene);
               animNode.connectToProperty('Y', animCurve);
               _loadTakeCurve(c3, animCurve);
-            } else if (c3.id == 'Channel' && c3.properties[0] == 'Z') {
+            } else if (c3.id == 'Channel' && c3.properties![0] == 'Z') {
               final animCurve = FbxAnimCurve(0, 'Z', null, scene);
               animNode.connectToProperty('Z', animCurve);
               _loadTakeCurve(c3, animCurve);
@@ -168,12 +167,6 @@ class FbxLoader {
           }
         }
       }
-    } else if (c.properties[0] == 'Visibility') {
-      final animNode = FbxAnimCurveNode(0, 'Visibility', null, scene);
-      obj.connectToProperty('Visibility', animNode);
-
-      final animCurve = FbxAnimCurve(0, 'Visibility', null, scene);
-      _loadTakeCurve(c, animCurve);
     }
   }
 
@@ -182,18 +175,18 @@ class FbxLoader {
       if (c.id == 'Default') {
         animCurve.defaultValue = c.getDouble(0);
       } else if (c.id == 'Key') {
-        for (var pi = 0; pi < c.properties.length;) {
+        for (var pi = 0; pi < c.properties!.length;) {
           final time = c.getInt(pi);
           final value = c.getDouble(pi + 1);
 
-          animCurve.keys.add(FbxAnimKey(time, value,
-              FbxAnimKey.INTERPOLATION_LINEAR));
+          animCurve.keys
+              .add(FbxAnimKey(time, value, FbxAnimKey.INTERPOLATION_LINEAR));
 
-          if ((pi + 2) >= c.properties.length) {
+          if ((pi + 2) >= c.properties!.length) {
             break;
           }
 
-          final type = c.properties[pi + 2].toString();
+          final type = c.properties![pi + 2].toString();
           var keyType = FbxAnimKey.INTERPOLATION_LINEAR;
 
           if (type == 'C') {
@@ -238,15 +231,15 @@ class FbxLoader {
   }
 
   void _loadConnections(FbxElement e, FbxScene scene) {
-    final SCENE = _parser.sceneName();
+    final SCENE = _parser?.sceneName;
 
     for (final c in e.children) {
       if (c.id == 'C' || c.id == 'Connect') {
-        final type = c.properties[0] as String;
+        final type = c.properties![0] as String?;
 
         if (type == 'OO') {
-          final src = c.properties[1].toString();
-          final dst = c.properties[2].toString();
+          final src = c.properties![1].toString();
+          final dst = c.properties![2].toString();
 
           final srcModel = scene.allObjects[src];
           if (srcModel == null) {
@@ -265,9 +258,9 @@ class FbxLoader {
             }
           }
         } else if (type == 'OP') {
-          final src = c.properties[1].toString();
-          final dst = c.properties[2].toString();
-          var attr = c.properties[3] as String;
+          final src = c.properties![1].toString();
+          final dst = c.properties![2].toString();
+          var attr = c.properties![3] as String?;
 
           final srcModel = scene.allObjects[src];
           if (srcModel == null) {
@@ -279,11 +272,8 @@ class FbxLoader {
           if (dstModel == null) {
             print('COULD NOT FIND NODE 2 : $dst ');
             continue;
-          }
-          else {
-            attr = attr
-                .split('|')
-                .last;
+          } else {
+            attr = attr!.split('|').last;
             dstModel.connectToProperty(attr, srcModel);
           }
         }
@@ -302,30 +292,30 @@ class FbxLoader {
         String rawName;
         String type;
 
-        if (c.properties.length == 3) {
+        if (c.properties!.length == 3) {
           id = c.getInt(0);
-          rawName = c.properties[1] as String;
-          type = c.properties[2] as String;
+          rawName = c.properties![1] as String;
+          type = c.properties![2] as String;
         } else {
           id = 0;
-          rawName = c.properties[0] as String;
-          type = c.properties[1] as String;
+          rawName = c.properties![0] as String;
+          type = c.properties![1] as String;
         }
 
         //logger("-----PARSER prop len " + c.properties.length.toString());
 
-        var name = _parser.getName(rawName);
+        var name = _parser?.getName(rawName);
 
         FbxObject node;
 
         if (type == 'Camera') {
-          final camera = FbxCamera(id, name, c, scene);
+          final camera = FbxCamera(id, name!, c, scene);
           node = camera;
           scene.allObjects[rawName] = camera;
           scene.allObjects[name] = camera;
           scene.cameras.add(camera);
         } else if (type == 'Light') {
-          final light = FbxLight(id, name, c, scene);
+          final light = FbxLight(id, name!, c, scene);
           node = light;
           scene.allObjects[rawName] = light;
           scene.allObjects[name] = light;
@@ -338,7 +328,7 @@ class FbxLoader {
           //logger("-----PARSER Mesh ");
 
           if (id == 0) {
-            final meshNode = FbxNode(id, name, 'Transform', c, scene);
+            final meshNode = FbxNode(id, name!, 'Transform', c, scene);
             scene.allObjects[rawName] = meshNode;
             scene.allObjects[name] = meshNode;
 
@@ -347,18 +337,18 @@ class FbxLoader {
             scene.meshes.add(mesh);
             meshNode.connectTo(mesh);
           } else {
-            node = FbxNode(id, name, 'Transform', c, scene);
+            node = FbxNode(id, name!, 'Transform', c, scene);
             scene.allObjects[rawName] = node;
             scene.allObjects[name] = node;
           }
         } else if (type == 'Limb' || type == 'LimbNode') {
-          final limb = FbxSkeleton(id, name, type, c, scene);
+          final limb = FbxSkeleton(id, name!, type, c, scene);
           node = limb;
           scene.allObjects[rawName] = limb;
           scene.allObjects[name] = limb;
           scene.skeletonNodes.add(limb);
         } else {
-          var tk = name.split(':');
+          var tk = name!.split(':');
           if (tk.length > 1) {
             name = tk[1];
 
@@ -379,7 +369,7 @@ class FbxLoader {
         }
       } else if (c.id == 'Geometry') {
         final id = c.getInt(0);
-        final type = c.properties[2] as String;
+        final type = c.properties![2] as String;
 
         if (type == 'Mesh' || type == 'Shape') {
           final mesh = FbxMesh(id, c, scene);
@@ -393,17 +383,17 @@ class FbxLoader {
         int id;
         String rawName;
 
-        if (c.properties.length == 3) {
+        if (c.properties!.length == 3) {
           id = c.getInt(0);
-          rawName = c.properties[1] as String;
+          rawName = c.properties![1] as String;
         } else {
           id = 0;
-          rawName = c.properties[0] as String;
+          rawName = c.properties![0] as String;
         }
 
-        final name = _parser.getName(rawName);
+        final name = _parser!.getName(rawName);
 
-        final material = FbxMaterial(id, name, c, scene);
+        final material = FbxMaterial(id, name!, c, scene);
         scene.allObjects[rawName] = material;
         scene.allObjects[name] = material;
         if (id != 0) {
@@ -414,17 +404,17 @@ class FbxLoader {
         int id;
         String rawName;
 
-        if (c.properties.length == 3) {
+        if (c.properties!.length == 3) {
           id = c.getInt(0);
-          rawName = c.properties[1] as String;
+          rawName = c.properties![1] as String;
         } else {
           id = 0;
-          rawName = c.properties[0] as String;
+          rawName = c.properties![0] as String;
         }
 
-        final name = _parser.getName(rawName);
+        final name = _parser!.getName(rawName);
 
-        final stack = FbxAnimStack(id, name, c, scene);
+        final stack = FbxAnimStack(id, name!, c, scene);
         if (id != 0) {
           scene.allObjects[id.toString()] = stack;
         }
@@ -435,17 +425,17 @@ class FbxLoader {
         int id;
         String rawName;
 
-        if (c.properties.length == 3) {
+        if (c.properties!.length == 3) {
           id = c.getInt(0);
-          rawName = c.properties[1] as String;
+          rawName = c.properties![1] as String;
         } else {
           id = 0;
-          rawName = c.properties[0] as String;
+          rawName = c.properties![0] as String;
         }
 
-        final name = _parser.getName(rawName);
+        final name = _parser!.getName(rawName);
 
-        final layer = FbxAnimLayer(id, name, c, scene);
+        final layer = FbxAnimLayer(id, name!, c, scene);
         if (id != 0) {
           scene.allObjects[id.toString()] = layer;
         }
@@ -456,19 +446,19 @@ class FbxLoader {
         String rawName;
         //String type;
 
-        if (c.properties.length == 3) {
+        if (c.properties!.length == 3) {
           id = c.getInt(0);
-          rawName = c.properties[1] as String;
+          rawName = c.properties![1] as String;
           //type = c.properties[2];
         } else {
           id = 0;
-          rawName = c.properties[0] as String;
+          rawName = c.properties![0] as String;
           //type = c.properties[1];
         }
 
-        final name = _parser.getName(rawName);
+        final name = _parser!.getName(rawName);
 
-        final curve = FbxAnimCurveNode(id, name, c, scene);
+        final curve = FbxAnimCurveNode(id, name!, c, scene);
         if (id != 0) {
           scene.allObjects[id.toString()] = curve;
         }
@@ -479,20 +469,20 @@ class FbxLoader {
         String rawName;
         String type;
 
-        if (c.properties.length == 3) {
+        if (c.properties!.length == 3) {
           id = c.getInt(0);
-          rawName = c.properties[1] as String;
-          type = c.properties[2] as String;
+          rawName = c.properties![1] as String;
+          type = c.properties![2] as String;
         } else {
           id = 0;
-          rawName = c.properties[0] as String;
-          type = c.properties[1] as String;
+          rawName = c.properties![0] as String;
+          type = c.properties![1] as String;
         }
 
-        final name = _parser.getName(rawName);
+        final name = _parser!.getName(rawName);
 
         if (type == 'Skin') {
-          final skin = FbxSkinDeformer(id, name, c, scene);
+          final skin = FbxSkinDeformer(id, name!, c, scene);
           scene.deformers.add(skin);
           scene.allObjects[rawName] = skin;
           scene.allObjects[name] = skin;
@@ -500,7 +490,7 @@ class FbxLoader {
             scene.allObjects[id.toString()] = skin;
           }
         } else if (type == 'Cluster') {
-          final cluster = FbxCluster(id, name, c, scene);
+          final cluster = FbxCluster(id, name!, c, scene);
           scene.deformers.add(cluster);
           scene.allObjects[rawName] = cluster;
           scene.allObjects[name] = cluster;
@@ -513,17 +503,17 @@ class FbxLoader {
         int id;
         String rawName;
 
-        if (c.properties.length == 3) {
+        if (c.properties!.length == 3) {
           id = c.getInt(0);
-          rawName = c.properties[1] as String;
+          rawName = c.properties![1] as String;
         } else {
           id = 0;
-          rawName = c.properties[0] as String;
+          rawName = c.properties![0] as String;
         }
 
-        final name = _parser.getName(rawName);
+        final name = _parser!.getName(rawName);
 
-        final texture = FbxTexture(id, name, c, scene);
+        final texture = FbxTexture(id, name!, c, scene);
 
         scene.textures.add(texture);
         scene.allObjects[rawName] = texture;
@@ -535,19 +525,19 @@ class FbxLoader {
         int id;
         String rawName;
 
-        if (c.properties.length == 3) {
+        if (c.properties!.length == 3) {
           id = c.getInt(0);
-          rawName = c.properties[1] as String;
+          rawName = c.properties![1] as String;
         } else {
           id = 0;
-          rawName = c.properties[0] as String;
+          rawName = c.properties![0] as String;
         }
 
-        final name = _parser.getName(rawName);
+        final name = _parser!.getName(rawName);
 
         final folder = FbxObject(id, name, c.id, c, scene);
         scene.allObjects[rawName] = folder;
-        scene.allObjects[name] = folder;
+        scene.allObjects[name!] = folder;
         if (id != 0) {
           scene.allObjects[id.toString()] = folder;
         }
@@ -555,19 +545,19 @@ class FbxLoader {
         int id;
         String rawName;
 
-        if (c.properties.length == 3) {
+        if (c.properties!.length == 3) {
           id = c.getInt(0);
-          rawName = c.properties[1] as String;
+          rawName = c.properties![1] as String;
         } else {
           id = 0;
-          rawName = c.properties[0] as String;
+          rawName = c.properties![0] as String;
         }
 
-        final name = _parser.getName(rawName);
+        final name = _parser!.getName(rawName);
 
         final constraint = FbxObject(id, name, c.id, c, scene);
         scene.allObjects[rawName] = constraint;
-        scene.allObjects[name] = constraint;
+        scene.allObjects[name!] = constraint;
         if (id != 0) {
           scene.allObjects[id.toString()] = constraint;
         }
@@ -575,17 +565,17 @@ class FbxLoader {
         int id;
         String rawName;
 
-        if (c.properties.length == 3) {
+        if (c.properties!.length == 3) {
           id = c.getInt(0);
-          rawName = c.properties[1] as String;
+          rawName = c.properties![1] as String;
         } else {
           id = 0;
-          rawName = c.properties[0] as String;
+          rawName = c.properties![0] as String;
         }
 
-        final name = _parser.getName(rawName);
+        final name = _parser!.getName(rawName);
 
-        final animCurve = FbxAnimCurve(id, name, c, scene);
+        final animCurve = FbxAnimCurve(id, name!, c, scene);
         scene.allObjects[rawName] = animCurve;
         scene.allObjects[name] = animCurve;
         if (id != 0) {
@@ -595,17 +585,17 @@ class FbxLoader {
         int id;
         String rawName;
 
-        if (c.properties.length == 3) {
+        if (c.properties!.length == 3) {
           id = c.getInt(0);
-          rawName = c.properties[1] as String;
+          rawName = c.properties![1] as String;
         } else {
           id = 0;
-          rawName = c.properties[0] as String;
+          rawName = c.properties![0] as String;
         }
 
-        final name = _parser.getName(rawName);
+        final name = _parser!.getName(rawName);
 
-        final node = FbxNodeAttribute(id, name, c.id, c, scene);
+        final node = FbxNodeAttribute(id, name!, c.id!, c, scene);
         scene.allObjects[rawName] = node;
         scene.allObjects[name] = node;
         if (id != 0) {
@@ -618,24 +608,24 @@ class FbxLoader {
         var node = FbxObject(0, 'SceneInfo', c.id, c, scene);
         scene.sceneInfo = node;
       } else if (c.id == 'Pose') {
-        var pose = FbxPose(c.properties[0].toString(),
-            c.properties[1] as String, c, scene);
+        var pose = FbxPose(
+            c.properties![0].toString(), c.properties![1] as String, c, scene);
         scene.poses.add(pose);
       } else if (c.id == 'Video') {
         int id;
         String rawName;
 
-        if (c.properties.length == 3) {
+        if (c.properties!.length == 3) {
           id = c.getInt(0);
-          rawName = c.properties[1] as String;
+          rawName = c.properties![1] as String;
         } else {
           id = 0;
-          rawName = c.properties[0] as String;
+          rawName = c.properties![0] as String;
         }
 
-        final name = _parser.getName(rawName);
+        final name = _parser!.getName(rawName);
 
-        final video = FbxVideo(id, name, c.id, c, scene);
+        final video = FbxVideo(id, name!, c.id!, c, scene);
 
         scene.videos.add(video);
         scene.allObjects[rawName] = video;
@@ -649,28 +639,26 @@ class FbxLoader {
     }
   }
 
-
   void _loadHeaderExtension(FbxElement e, FbxScene data) {
     for (final c in e.children) {
       if (c.id == 'OtherFlags') {
         for (final c2 in c.children) {
-          if (c2.properties.length == 1) {
-            data.header[c2.id] = c2.properties[0];
+          if (c2.properties!.length == 1) {
+            data.header[c2.id!] = c2.properties![0];
           }
         }
       } else {
-        if (c.properties.length == 1) {
+        if (c.properties!.length == 1) {
           if (c.id == 'FBXVersion') {
             /*_fileVersion =*/ c.getInt(0);
           }
 
-          data.header[c.id] = c.properties[0];
+          data.header[c.id!] = c.properties![0];
         }
       }
     }
   }
 
   //int _fileVersion = 0;
-  FbxParser _parser;
+  FbxParser? _parser;
 }
-

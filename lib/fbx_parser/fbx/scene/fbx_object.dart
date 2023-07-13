@@ -6,20 +6,20 @@ import 'fbx_node.dart';
 import 'fbx_node_attribute.dart';
 
 class FbxObject {
-  int id;
-  String name;
-  String type;
-  FbxElement element;
-  FbxScene scene;
+  int? id;
+  String? name;
+  String? type;
+  FbxElement? element;
+  FbxScene? scene;
   Map<String, FbxProperty> properties = {};
   List<FbxObject> connectedFrom = [];
   List<FbxObject> connectedTo = [];
   List<FbxNodeAttribute> nodeAttributes = [];
-  String reference;
+  String? reference;
 
   FbxObject(this.id, this.name, this.type, this.element, this.scene);
 
-  FbxNode getParentNode() {
+  FbxNode? getParentNode() {
     if (this is FbxNode) {
       return this as FbxNode;
     }
@@ -42,18 +42,18 @@ class FbxObject {
 
   int get numConnectedFrom => connectedFrom.length;
 
-  FbxObject getConnectedFrom(int index) =>
+  FbxObject? getConnectedFrom(int index) =>
       (index >= 0 && index < connectedFrom.length)
-      ? connectedFrom[index] : null;
+          ? connectedFrom[index]
+          : null;
 
   int get numConnectedTo => connectedTo.length;
 
-  FbxObject getConnectedTo(int index) =>
-        (index >= 0 && index < connectedTo.length)
-        ? connectedTo[index] : null;
+  FbxObject? getConnectedTo(int index) =>
+      (index >= 0 && index < connectedTo.length) ? connectedTo[index] : null;
 
   List<FbxObject> findConnectionsByType(String type,
-      [List<FbxObject> connections]) {
+      [List<FbxObject>? connections]) {
     connections ??= <FbxObject>[];
 
     for (final obj in connectedTo) {
@@ -72,14 +72,14 @@ class FbxObject {
 
   void connectToProperty(String propertyName, FbxObject object) {
     final property = addProperty(propertyName);
-    property.connectedFrom = object;
+    property!.connectedFrom = object;
   }
 
   Iterable<String> propertyNames() => properties.keys;
 
   bool hasProperty(String name) => properties.containsKey(name);
 
-  FbxProperty addProperty(String name, [dynamic defaultValue]) {
+  FbxProperty? addProperty(String name, [dynamic defaultValue]) {
     if (!properties.containsKey(name)) {
       properties[name] = FbxProperty(defaultValue);
     }
@@ -90,26 +90,30 @@ class FbxObject {
     if (!properties.containsKey(name)) {
       properties[name] = FbxProperty(value);
     } else {
-      properties[name].value = value;
+      properties[name]!.value = value;
     }
-    return properties[name];
+    return properties[name]!;
   }
 
   dynamic getProperty(String name) =>
-      properties.containsKey(name) ? properties[name].value : null;
+      properties.containsKey(name) ? properties[name]!.value : null;
 
   @override
   String toString() => '$name ($type)';
 
-  double toDouble(dynamic x) =>
-      x is double ? x
-          : x is bool ? (x ? 1.0 : 0.0)
-          : x is String ? double.parse(x)
-          : (x as num).toDouble();
+  double toDouble(dynamic x) => x is double
+      ? x
+      : x is bool
+          ? (x ? 1.0 : 0.0)
+          : x is String
+              ? double.parse(x)
+              : (x as num).toDouble();
 
-  int toInt(dynamic x) =>
-      x is int ? x
-          : x is bool ? (x ? 1 : 0)
-          : x is String ? int.parse(x)
-          : (x as num).toInt();
+  int toInt(dynamic x) => x is int
+      ? x
+      : x is bool
+          ? (x ? 1 : 0)
+          : x is String
+              ? int.parse(x)
+              : (x as num).toInt();
 }

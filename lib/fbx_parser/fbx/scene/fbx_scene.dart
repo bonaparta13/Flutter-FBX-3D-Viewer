@@ -20,9 +20,9 @@ import 'package:vector_math/vector_math.dart';
 class FbxScene extends FbxObject {
   final header = <String, dynamic>{};
 
-  FbxGlobalSettings globalSettings;
-  FbxObject sceneInfo;
-  FbxAnimEvaluator evaluator;
+  FbxGlobalSettings? globalSettings;
+  FbxObject? sceneInfo;
+  FbxAnimEvaluator? evaluator;
   List<FbxCamera> cameras = [];
   List<FbxLight> lights = [];
   List<FbxMesh> meshes = [];
@@ -41,22 +41,21 @@ class FbxScene extends FbxObject {
   double endFrame = 100.0;
   double currentFrame = 1.0;
 
-  FbxScene()
-    : super(0, '', 'Scene', null, null) {
+  FbxScene() : super(0, '', 'Scene', null, null) {
     evaluator = FbxAnimEvaluator(this);
   }
 
-  FbxPose getPose(int index) => index < poses.length ? poses[index] : null;
+  FbxPose? getPose(int index) => index < poses.length ? poses[index] : null;
 
-  Matrix4 getNodeLocalTransform(FbxNode node) =>
-      evaluator.getNodeLocalTransform(node, currentFrame);
+  Matrix4? getNodeLocalTransform(FbxNode node) =>
+      evaluator?.getNodeLocalTransform(node, currentFrame);
 
-  Matrix4 getNodeGlobalTransform(FbxNode node) =>
-        evaluator.getNodeGlobalTransform(node, currentFrame);
+  Matrix4? getNodeGlobalTransform(FbxNode node) =>
+      evaluator?.getNodeGlobalTransform(node, currentFrame);
 
   int get timeMode {
     if (globalSettings != null) {
-      return globalSettings.timeMode.value as int;
+      return globalSettings!.timeMode!.value as int;
     }
     return FbxFrameRate.DEFAULT;
   }

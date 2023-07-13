@@ -7,7 +7,7 @@ import 'input_buffer.dart';
 class FbxAsciiParser extends FbxParser {
   static const FILE_HEADER = '; FBX';
 
-  InputBuffer _input;
+  InputBuffer? _input;
 
   static bool isValidFile(InputBuffer input) {
     final fp = input.offset;
@@ -34,7 +34,7 @@ class FbxAsciiParser extends FbxParser {
   }
 
   @override
-  FbxElement nextElement() {
+  FbxElement? nextElement() {
     if (_input == null) {
       return null;
     }
@@ -48,22 +48,22 @@ class FbxAsciiParser extends FbxParser {
       return null;
     }
 
-    final elem = FbxElement(tk);
+    final elem = FbxElement(tk!);
 
-    final sp = _input.offset;
+    final sp = _input!.offset;
     tk = _nextToken(_input);
 
     // If the next token is a node definition (nodeType:*), then back up
     // and save it for the next node.
     final tk2 = _nextToken(_input, peek: true);
     if (tk2 == ':') {
-      _input.offset = sp;
+      _input!.offset = sp;
       return elem;
     }
 
     if (tk != '{') {
-      while (!_input.isEOS) {
-        elem.properties.add(tk);
+      while (!_input!.isEOS) {
+        elem.properties!.add(tk);
         tk = _nextToken(_input, peek: true);
         if (tk == ',' || tk == '{') {
           _nextToken(_input); // consume the ,{ token
@@ -92,12 +92,12 @@ class FbxAsciiParser extends FbxParser {
   String sceneName() => 'Model::Scene';
 
   @override
-  String getName(String rawName) => rawName.split('::').last;
+  String? getName(String? rawName) => rawName!.split('::').last;
 
-  String _nextToken(InputBuffer input, {bool peek = false}) {
+  String? _nextToken(InputBuffer? input, {bool peek = false}) {
     _skipWhitespace(input);
 
-    if (input.isEOS) {
+    if (input!.isEOS) {
       return null;
     }
 
@@ -168,8 +168,8 @@ class FbxAsciiParser extends FbxParser {
         (c == TK_UNDERSCORE);
   }
 
-  void _skipWhitespace(InputBuffer input) {
-    while (!input.isEOS) {
+  void _skipWhitespace(InputBuffer? input) {
+    while (!input!.isEOS) {
       final c = input.peekBytes(1)[0];
 
       if (c == TK_SPACE || c == TK_TAB || c == TK_RL || c == TK_NL) {

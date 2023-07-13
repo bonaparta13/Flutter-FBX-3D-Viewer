@@ -5,23 +5,21 @@ import 'fbx_anim_key.dart';
 import 'fbx_scene.dart';
 
 class FbxAnimCurve extends FbxObject {
-  double defaultValue;
+  double? defaultValue;
   List<FbxAnimKey> keys = [];
 
-  FbxAnimCurve(int id, String name, FbxElement element, FbxScene scene)
-    : super(id, name, 'AnimCurve', element, scene) {
-
+  FbxAnimCurve(int id, String name, FbxElement? element, FbxScene scene)
+      : super(id, name, 'AnimCurve', element, scene) {
     if (element == null) {
       return;
     }
 
     //int version = 0;
-    List keyTime;
-    List keyValue;
+    List? keyTime;
+    List? keyValue;
 
     for (final c in element.children) {
       if (c.id == 'Default') {
-
       } else if (c.id == 'KeyVer') {
         //version = c.getInt(0);
       } else if (c.id == 'KeyTime') {
@@ -35,25 +33,17 @@ class FbxAnimCurve extends FbxObject {
         }
         keyValue = c.children[0].properties;
       } else if (c.id == 'KeyAttrFlags') {
-
       } else if (c.id == 'KeyAttrDataFloat') {
-
-      } else if (c.id == 'KeyAttrRefCount') {
-
-      }
+      } else if (c.id == 'KeyAttrRefCount') {}
     }
 
-    if (keyTime != null && keyValue != null) {
-      if (keyTime.length == keyValue.length) {
-        for (var i = 0; i < keyTime.length; ++i) {
-          keys.add(FbxAnimKey(toInt(keyTime[i]),
-                              toDouble(keyValue[i]),
-                              FbxAnimKey.INTERPOLATION_LINEAR));
-        }
+    if (keyTime!.length == keyValue!.length) {
+      for (var i = 0; i < keyTime.length; ++i) {
+        keys.add(FbxAnimKey(toInt(keyTime[i]), toDouble(keyValue[i]),
+            FbxAnimKey.INTERPOLATION_LINEAR));
       }
     }
   }
-
 
   int get numKeys => keys.length;
 

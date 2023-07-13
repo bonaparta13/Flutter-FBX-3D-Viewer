@@ -6,17 +6,11 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_fbx3d_viewer/fbx_viewer/fbx3d_model.dart';
-import 'package:flutter_fbx3d_viewer/fbx_viewer/fbx3d_object.dart';
 import 'package:flutter_fbx3d_viewer/fbx_viewer/painter/globals.dart';
 import 'package:flutter_fbx3d_viewer/fbx_viewer/painter/texture_data.dart';
 import 'package:flutter_fbx3d_viewer/fbx_viewer/painter/vertices_painter.dart';
 import 'package:flutter_fbx3d_viewer/fbx_viewer/utils/converter.dart';
-import 'package:flutter_fbx3d_viewer/fbx_viewer/utils/logger.dart';
-import 'package:flutter_fbx3d_viewer/fbx_viewer/utils/math_utils.dart';
-import 'package:flutter_fbx3d_viewer/fbx_viewer/utils/screen_utils.dart';
 import 'package:flutter_fbx3d_viewer/fbx_viewer/utils/utils.dart';
-import 'package:flutter_fbx3d_viewer/fbx_viewer/widgets/zoom_gesture_detector.dart';
 import 'package:vector_math/vector_math.dart' as Math;
 
 import 'fbx3d_viewer.dart';
@@ -31,19 +25,19 @@ class Fbx3DViewer extends StatefulWidget {
   final bool showInfo;
   bool showWireframe;
   final Color wireframeColor;
-  Math.Vector3 initialAngles;
+  Math.Vector3? initialAngles;
   double initialZoom;
   final double animationSpeed;
   final Fbx3DViewerController fbx3DViewerController;
   int panDistanceToActivate = 10;
-  final Function(double) onZoomChangeListener;
-  final Function(Math.Vector3) onRotationChangeListener;
-  final void Function(double dx) onHorizontalDragUpdate;
-  final void Function(double dy) onVerticalDragUpdate;
+  final Function(double)? onZoomChangeListener;
+  final Function(Math.Vector3)? onRotationChangeListener;
+  final void Function(double dx)? onHorizontalDragUpdate;
+  final void Function(double dy)? onVerticalDragUpdate;
   final int refreshMilliseconds;
   final int endFrame;
   Color color;
-  final String texturePath;
+  final String? texturePath;
   Math.Vector3 lightPosition;
   Color lightColor;
   final bool showWireFrame;
@@ -56,14 +50,14 @@ class Fbx3DViewer extends StatefulWidget {
   currentState() => fbx3DViewerController.state;
 
   Fbx3DViewer({
-    @required this.size,
-    @required this.fbxPath,
-    @required this.lightPosition,
-    @required this.initialZoom,
-    @required this.animationSpeed,
-    @required this.fbx3DViewerController,
-    @required this.refreshMilliseconds,
-    @required this.endFrame,
+    required this.size,
+    required this.fbxPath,
+    required this.lightPosition,
+    required this.initialZoom,
+    required this.animationSpeed,
+    required this.fbx3DViewerController,
+    required this.refreshMilliseconds,
+    required this.endFrame,
     this.texturePath,
     this.backgroundColor = const Color(0xff353535),
     this.showInfo = false,
@@ -102,19 +96,21 @@ class Fbx3DViewerController extends StatefulWidget {
   reset() => state.reset();
 
   refresh() {
-    if (state.fbx3DRenderer != null) state.fbx3DRenderer.refresh();
+    state.fbx3DRenderer!.refresh();
   }
 
   @override
   State<StatefulWidget> createState() => state;
 
-  setLightPosition(Math.Vector3 lightPosition) => state.setLightPosition(lightPosition);
+  setLightPosition(Math.Vector3 lightPosition) =>
+      state.setLightPosition(lightPosition);
 
   showWireframe(bool showWireframe) => state.showWireframe(showWireframe);
 
   getWidget() => state.widget;
 
-  setRandomColors(Color color, Color lightColor) => state.setRandomColors(color, lightColor);
+  setRandomColors(Color color, Color lightColor) =>
+      state.setRandomColors(color, lightColor);
 
   setColor(Color color) => state.setColor(color);
 
@@ -125,16 +121,16 @@ class _Fbx3DViewerState extends State<Fbx3DViewer> {
   double angleX = 0.0;
   double angleY = 0.0;
   double angleZ = 0.0;
-  double previousZoom;
-  Offset startingFocalPoint;
-  Offset previousOffset;
+  double? previousZoom;
+  Offset? startingFocalPoint;
+  Offset? previousOffset;
   Offset offset = Offset.zero;
-  Fbx3DModel model;
+  Fbx3DModel? model;
   bool isLoading = false;
-  TextureData textureData;
+  TextureData? textureData;
   var rotation = Math.Vector3(0, 0, 0);
-  double zoom;
-  Fbx3DRenderer fbx3DRenderer;
+  double? zoom;
+  Fbx3DRenderer? fbx3DRenderer;
 
   initState() {
     super.initState();
@@ -168,10 +164,8 @@ class _Fbx3DViewerState extends State<Fbx3DViewer> {
       _newModel(cont);
     }
 
-    if (widget.texturePath != null) {
-      textureData = TextureData();
-      await textureData.load(context, widget.texturePath, resizeWidth: 200);
-    }
+    textureData = TextureData();
+    await textureData!.load(context, widget.texturePath!, resizeWidth: 200);
     logger("load ${widget.texturePath}");
 
     paintRasterizer.shader = null;
@@ -181,11 +175,9 @@ class _Fbx3DViewerState extends State<Fbx3DViewer> {
 
   _newModel(String contFbx) {
     model = Fbx3DModel();
-    model.parseFrom(context, contFbx);
+    model!.parseFrom(context, contFbx);
 
-    if (widget.initialAngles != null) {
-      setRotation(widget.initialAngles);
-    }
+    setRotation(widget.initialAngles!);
   }
 
   setRotation(Math.Vector3 r) {
@@ -193,7 +185,7 @@ class _Fbx3DViewerState extends State<Fbx3DViewer> {
     angleY = r.y;
     angleZ = r.z;
     _rotationChanged();
-    if (fbx3DRenderer != null) fbx3DRenderer.refresh();
+    fbx3DRenderer!.refresh();
   }
 
   @override
@@ -207,7 +199,7 @@ class _Fbx3DViewerState extends State<Fbx3DViewer> {
       angleX = angleX - 360;
     else if (angleX < 0) angleX = 360 - angleX;
     _rotationChanged();
-    if (fbx3DRenderer != null) fbx3DRenderer.refresh();
+    fbx3DRenderer!.refresh();
   }
 
   rotateY(double v) {
@@ -216,7 +208,7 @@ class _Fbx3DViewerState extends State<Fbx3DViewer> {
       angleY = angleY - 360;
     else if (angleY < 0) angleY = 360 - angleY;
     _rotationChanged();
-    if (fbx3DRenderer != null) fbx3DRenderer.refresh();
+    fbx3DRenderer!.refresh();
   }
 
   rotateZ(double v) {
@@ -225,37 +217,39 @@ class _Fbx3DViewerState extends State<Fbx3DViewer> {
       angleZ = angleZ - 360;
     else if (angleZ < 0) angleZ = 360 - angleZ;
     _rotationChanged();
-    if (fbx3DRenderer != null) fbx3DRenderer.refresh();
+    fbx3DRenderer!.refresh();
   }
 
   _rotationChanged() {
     rotation.setValues(angleX, angleY, angleZ);
-    if (widget.onRotationChangeListener != null) widget.onRotationChangeListener(rotation);
+    widget.onRotationChangeListener!(rotation);
   }
 
   _handleScaleStart(initialFocusPoint) {
     startingFocalPoint = initialFocusPoint;
     previousOffset = offset;
     previousZoom = zoom;
-    if (fbx3DRenderer != null) fbx3DRenderer.refresh();
+    fbx3DRenderer!.refresh();
   }
 
   _handleScaleUpdate(changedFocusPoint, scale) {
-    zoom = previousZoom * scale;
-    final Offset normalizedOffset = (startingFocalPoint - previousOffset) / previousZoom;
-    offset = changedFocusPoint - normalizedOffset * zoom;
-    if (widget.onZoomChangeListener != null) widget.onZoomChangeListener(zoom);
-    if (fbx3DRenderer != null) fbx3DRenderer.refresh();
+    zoom = previousZoom! * scale;
+    final Offset normalizedOffset =
+        (startingFocalPoint! - previousOffset!) / previousZoom!;
+    offset = changedFocusPoint - normalizedOffset * zoom!;
+    widget.onZoomChangeListener!(zoom!);
+    fbx3DRenderer!.refresh();
   }
 
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return Center(child: CircularProgressIndicator(backgroundColor: Colors.black));
+      return Center(
+          child: CircularProgressIndicator(backgroundColor: Colors.black));
     } else {
       if (fbx3DRenderer == null) {
         fbx3DRenderer = Fbx3DRenderer(widget);
-        fbx3DRenderer.refresh();
+        fbx3DRenderer!.refresh();
       }
 
       return ZoomGestureDetector(
@@ -263,10 +257,13 @@ class _Fbx3DViewerState extends State<Fbx3DViewer> {
           painter: fbx3DRenderer,
           size: widget.size,
         ),
-        onScaleStart: (initialFocusPoint) => _handleScaleStart(initialFocusPoint),
-        onScaleUpdate: (changedFocusPoint, scale) => _handleScaleUpdate(changedFocusPoint, scale),
-        onHorizontalDragUpdate: (double dx) => widget.onHorizontalDragUpdate(dx),
-        onVerticalDragUpdate: (double dy) => widget.onVerticalDragUpdate(dy),
+        onScaleStart: (initialFocusPoint) =>
+            _handleScaleStart(initialFocusPoint),
+        onScaleUpdate: (changedFocusPoint, scale) =>
+            _handleScaleUpdate(changedFocusPoint, scale),
+        onHorizontalDragUpdate: (double dx) =>
+            widget.onHorizontalDragUpdate!(dx),
+        onVerticalDragUpdate: (double dy) => widget.onVerticalDragUpdate!(dy),
         panDistanceToActivate: widget.panDistanceToActivate,
       );
     }
@@ -274,46 +271,38 @@ class _Fbx3DViewerState extends State<Fbx3DViewer> {
 
   setLightPosition(Math.Vector3 lightPosition) {
     widget.lightPosition = lightPosition;
-    if (fbx3DRenderer != null) fbx3DRenderer.refresh();
+    fbx3DRenderer!.refresh();
   }
 
   showWireframe(bool showWireframe) {
     widget.showWireframe = showWireframe;
 
-    if (fbx3DRenderer != null) {
-      fbx3DRenderer.reset();
-      Future.delayed(Duration(milliseconds: 100), () {
-        fbx3DRenderer.refresh();
-      });
-    }
+    fbx3DRenderer!.reset();
+    Future.delayed(Duration(milliseconds: 100), () {
+      fbx3DRenderer!.refresh();
+    });
   }
 
   setRandomColors(Color color, Color lightColor) {
     widget.color = color;
     widget.lightColor = lightColor;
 
-    if (fbx3DRenderer != null) {
-      fbx3DRenderer.reset();
-      Future.delayed(Duration(milliseconds: 100), () => fbx3DRenderer.refresh());
-    }
+    fbx3DRenderer!.reset();
+    Future.delayed(Duration(milliseconds: 100), () => fbx3DRenderer!.refresh());
   }
 
   setColor(Color color) {
     widget.color = color;
 
-    if (fbx3DRenderer != null) {
-      fbx3DRenderer.reset();
-      Future.delayed(Duration(milliseconds: 100), () => fbx3DRenderer.refresh());
-    }
+    fbx3DRenderer!.reset();
+    Future.delayed(Duration(milliseconds: 100), () => fbx3DRenderer!.refresh());
   }
 
   setLightColor(Color color) {
     widget.lightColor = color;
 
-    if (fbx3DRenderer != null) {
-      fbx3DRenderer.reset();
-      Future.delayed(Duration(milliseconds: 100), () => fbx3DRenderer.refresh());
-    }
+    fbx3DRenderer!.reset();
+    Future.delayed(Duration(milliseconds: 100), () => fbx3DRenderer!.refresh());
   }
 }
 
@@ -350,7 +339,16 @@ class Fbx3DRenderer extends ChangeNotifier implements CustomPainter {
   }
 
   _drawTriangle(
-      Canvas canvas, Math.Vector3 v1, Math.Vector3 v2, Math.Vector3 v3, Math.Vector2 uv1, Math.Vector2 uv2, Math.Vector2 uv3, Math.Vector3 n1, Math.Vector3 n2, Math.Vector3 n3) {
+      Canvas canvas,
+      Math.Vector3 v1,
+      Math.Vector3 v2,
+      Math.Vector3 v3,
+      Math.Vector2 uv1,
+      Math.Vector2 uv2,
+      Math.Vector2 uv3,
+      Math.Vector3 n1,
+      Math.Vector3 n2,
+      Math.Vector3 n3) {
     final path = Path();
     path.moveTo(v1.x, v1.y);
     path.lineTo(v2.x, v2.y);
@@ -380,7 +378,8 @@ class Fbx3DRenderer extends ChangeNotifier implements CustomPainter {
         drawTexturedTrianglePoints(canvas, depthBuffer, v1, v2, v3, uv1, uv2, uv3, n1, n2, n3, color, brightness,
             widget.currentState().textureData, lightPosition);
       else if (widget.rasterizerMethod == RasterizerMethod.NewMethod)*/
-    drawTexturedTriangleVertices(canvas, v1, v2, v3, uv1, uv2, uv3, n1, n2, n3, color, widget.currentState().textureData, lightPosition, lightColor);
+    drawTexturedTriangleVertices(canvas, v1, v2, v3, uv1, uv2, uv3, n1, n2, n3,
+        color, widget.currentState().textureData, lightPosition, lightColor);
     //}
 
     if (widget.showWireframe ?? false == true) {
@@ -393,12 +392,16 @@ class Fbx3DRenderer extends ChangeNotifier implements CustomPainter {
     final distance = (widget.gridsMaxTile * steps).toInt();
 
     for (int i = -distance ~/ steps; i <= distance ~/ steps; i++) {
-      final p1 = gen2DPointFrom3D(_transformVertex(Math.Vector3(-distance.toDouble(), 0, -i * steps.toDouble())));
-      final p2 = gen2DPointFrom3D(_transformVertex(Math.Vector3(distance.toDouble(), 0, -i * steps.toDouble())));
+      final p1 = gen2DPointFrom3D(_transformVertex(
+          Math.Vector3(-distance.toDouble(), 0, -i * steps.toDouble())));
+      final p2 = gen2DPointFrom3D(_transformVertex(
+          Math.Vector3(distance.toDouble(), 0, -i * steps.toDouble())));
       canvas.drawLine(p1, p2, paintGrids);
 
-      final p3 = gen2DPointFrom3D(_transformVertex(Math.Vector3(-distance.toDouble(), 0, i * steps.toDouble())));
-      final p4 = gen2DPointFrom3D(_transformVertex(Math.Vector3(distance.toDouble(), 0, i * steps.toDouble())));
+      final p3 = gen2DPointFrom3D(_transformVertex(
+          Math.Vector3(-distance.toDouble(), 0, i * steps.toDouble())));
+      final p4 = gen2DPointFrom3D(_transformVertex(
+          Math.Vector3(distance.toDouble(), 0, i * steps.toDouble())));
       canvas.drawLine(p3, p4, paintGrids);
 
       if (i == 0) {
@@ -407,12 +410,16 @@ class Fbx3DRenderer extends ChangeNotifier implements CustomPainter {
     }
 
     for (int i = -distance ~/ steps; i <= distance ~/ steps; i++) {
-      final p1 = gen2DPointFrom3D(_transformVertex(Math.Vector3(-i * steps.toDouble(), 0, -distance.toDouble())));
-      final p2 = gen2DPointFrom3D(_transformVertex(Math.Vector3(-i * steps.toDouble(), 0, distance.toDouble())));
+      final p1 = gen2DPointFrom3D(_transformVertex(
+          Math.Vector3(-i * steps.toDouble(), 0, -distance.toDouble())));
+      final p2 = gen2DPointFrom3D(_transformVertex(
+          Math.Vector3(-i * steps.toDouble(), 0, distance.toDouble())));
       canvas.drawLine(p1, p2, paintGrids);
 
-      final p3 = gen2DPointFrom3D(_transformVertex(Math.Vector3(i * steps.toDouble(), 0, -distance.toDouble())));
-      final p4 = gen2DPointFrom3D(_transformVertex(Math.Vector3(i * steps.toDouble(), 0, distance.toDouble())));
+      final p3 = gen2DPointFrom3D(_transformVertex(
+          Math.Vector3(i * steps.toDouble(), 0, -distance.toDouble())));
+      final p4 = gen2DPointFrom3D(_transformVertex(
+          Math.Vector3(i * steps.toDouble(), 0, distance.toDouble())));
       canvas.drawLine(p3, p4, paintGrids);
 
       if (i == 0) {
@@ -454,11 +461,12 @@ class Fbx3DRenderer extends ChangeNotifier implements CustomPainter {
     for (int i = 0; i < model.objects.length; i++) {
       Fbx3DObject obj = model.objects[i];
       obj.update();
-      vCount += obj.points.length ~/ 3;
+      vCount += obj.points!.length ~/ 3;
     }
     if (vCount > MAX_SUPPORTED_VERTICES) {
       final sHead = "${widget.fbxPath}";
-      final sDesc = "Too much points: $vCount! Max supported points: $MAX_SUPPORTED_VERTICES!";
+      final sDesc =
+          "Too much points: $vCount! Max supported points: $MAX_SUPPORTED_VERTICES!";
       drawErrorText(canvas, sHead, sDesc);
       return;
     }
@@ -483,16 +491,16 @@ class Fbx3DRenderer extends ChangeNotifier implements CustomPainter {
       final oIndices = obj.indices;
       final oNormals = obj.normals;
       final oUVs = obj.uvs;
-      final sortedItems = List<Map<String, dynamic>>();
+      final sortedItems = <Map<String, dynamic>>[];
 
       final oJointMatrix = listMatrixFromFloat32List(obj.skinPalette);
       final oSkinIndices = listVector4FromFloat32List(obj.skinIndices);
       final oSkinWeights = listVector4FromFloat32List(obj.skinWeights);
 
       //1 a pontokbol keszitek egy Vec3 listet
-      final List<Math.Vector3> tempVertices = List();
-      final List<Math.Vector3> tempNormals = List();
-      final List<Math.Vector3> tempUVs = List();
+      final List<Math.Vector3> tempVertices = [];
+      final List<Math.Vector3> tempNormals = [];
+      final List<Math.Vector3> tempUVs = [];
 
       for (int index = 0; index < oPoints.length; index += 3) {
         final p1 = oPoints[index];
@@ -517,8 +525,8 @@ class Fbx3DRenderer extends ChangeNotifier implements CustomPainter {
       //get the _getMaxWeightsPerVertex()
       _getMaxWeightsPerVertex(tempVertices, oSkinWeights);
 
-      final List<Math.Vector3> bonedVertices = List();
-      final List<Math.Vector3> tempNormals2 = List();
+      final List<Math.Vector3> bonedVertices = [];
+      final List<Math.Vector3> tempNormals2 = [];
 
       for (int index = 0; index < tempVertices.length; index++) {
         final skinIndexX = oSkinIndices[index].x;
@@ -530,20 +538,38 @@ class Fbx3DRenderer extends ChangeNotifier implements CustomPainter {
         final skinWeightZ = oSkinWeights[index].z;
         final skinWeightW = oSkinWeights[index].w;
 
-        final bv =
-            _Fbx3DBones.calculateBoneVertex(tempVertices[index], skinIndexX, skinIndexY, skinIndexZ, skinIndexW, skinWeightX, skinWeightY, skinWeightZ, skinWeightW, oJointMatrix);
+        final bv = _Fbx3DBones.calculateBoneVertex(
+            tempVertices[index],
+            skinIndexX,
+            skinIndexY,
+            skinIndexZ,
+            skinIndexW,
+            skinWeightX,
+            skinWeightY,
+            skinWeightZ,
+            skinWeightW,
+            oJointMatrix);
         bonedVertices.add(bv);
 
-        final bn =
-            _Fbx3DBones.calculateBoneNormal(tempNormals[index], skinIndexX, skinIndexY, skinIndexZ, skinIndexW, skinWeightX, skinWeightY, skinWeightZ, skinWeightW, oJointMatrix);
+        final bn = _Fbx3DBones.calculateBoneNormal(
+            tempNormals[index],
+            skinIndexX,
+            skinIndexY,
+            skinIndexZ,
+            skinIndexW,
+            skinWeightX,
+            skinWeightY,
+            skinWeightZ,
+            skinWeightW,
+            oJointMatrix);
         tempNormals2.add(bn);
       }
 
       verticesCount += bonedVertices.length;
 
-      final List<double> newPoints = List();
-      final List<double> newNormals = List();
-      final List<double> newUVs = List();
+      final List<double> newPoints = [];
+      final List<double> newNormals = [];
+      final List<double> newUVs = [];
 
       for (int index = 0; index < bonedVertices.length; index++) {
         newPoints.add(bonedVertices[index].x);
@@ -563,28 +589,49 @@ class Fbx3DRenderer extends ChangeNotifier implements CustomPainter {
       final Float32List nNormals = Float32List.fromList(newNormals);
       final Float32List nUVs = Float32List.fromList(newUVs);
 
-      final List<Math.Vector3> vertices = List();
-      final List<Math.Vector3> normals = List();
-      final List<Math.Vector2> uvs = List();
+      final List<Math.Vector3> vertices = [];
+      final List<Math.Vector3> normals = [];
+      final List<Math.Vector2> uvs = [];
 
       for (int index = 0; index < oIndices.length; index += 3) {
-        Math.Vector3 v1 = _transformVertex(Math.Vector3(nPoints[oIndices[index] * 3], nPoints[oIndices[index] * 3 + 1], nPoints[oIndices[index] * 3 + 2]));
-        Math.Vector3 v2 = _transformVertex(Math.Vector3(nPoints[oIndices[index + 1] * 3], nPoints[oIndices[index + 1] * 3 + 1], nPoints[oIndices[index + 1] * 3 + 2]));
-        Math.Vector3 v3 = _transformVertex(Math.Vector3(nPoints[oIndices[index + 2] * 3], nPoints[oIndices[index + 2] * 3 + 1], nPoints[oIndices[index + 2] * 3 + 2]));
+        Math.Vector3 v1 = _transformVertex(Math.Vector3(
+            nPoints[oIndices[index] * 3],
+            nPoints[oIndices[index] * 3 + 1],
+            nPoints[oIndices[index] * 3 + 2]));
+        Math.Vector3 v2 = _transformVertex(Math.Vector3(
+            nPoints[oIndices[index + 1] * 3],
+            nPoints[oIndices[index + 1] * 3 + 1],
+            nPoints[oIndices[index + 1] * 3 + 2]));
+        Math.Vector3 v3 = _transformVertex(Math.Vector3(
+            nPoints[oIndices[index + 2] * 3],
+            nPoints[oIndices[index + 2] * 3 + 1],
+            nPoints[oIndices[index + 2] * 3 + 2]));
         vertices.add(v1);
         vertices.add(v2);
         vertices.add(v3);
 
-        Math.Vector3 n1 = Math.Vector3(nNormals[oIndices[index] * 3], nNormals[oIndices[index] * 3 + 1], nNormals[oIndices[index] * 3 + 2]);
-        Math.Vector3 n2 = Math.Vector3(nNormals[oIndices[index + 1] * 3], nNormals[oIndices[index + 1] * 3 + 1], nNormals[oIndices[index + 1] * 3 + 2]);
-        Math.Vector3 n3 = Math.Vector3(nNormals[oIndices[index + 2] * 3], nNormals[oIndices[index + 2] * 3 + 1], nNormals[oIndices[index + 2] * 3 + 2]);
+        Math.Vector3 n1 = Math.Vector3(
+            nNormals[oIndices[index] * 3],
+            nNormals[oIndices[index] * 3 + 1],
+            nNormals[oIndices[index] * 3 + 2]);
+        Math.Vector3 n2 = Math.Vector3(
+            nNormals[oIndices[index + 1] * 3],
+            nNormals[oIndices[index + 1] * 3 + 1],
+            nNormals[oIndices[index + 1] * 3 + 2]);
+        Math.Vector3 n3 = Math.Vector3(
+            nNormals[oIndices[index + 2] * 3],
+            nNormals[oIndices[index + 2] * 3 + 1],
+            nNormals[oIndices[index + 2] * 3 + 2]);
         normals.add(n1);
         normals.add(n2);
         normals.add(n3);
 
-        Math.Vector2 uv1 = Math.Vector2(nUVs[oIndices[index] * 2], nUVs[oIndices[index] * 2 + 1]);
-        Math.Vector2 uv2 = Math.Vector2(nUVs[oIndices[index + 1] * 2], nUVs[oIndices[index + 1] * 2 + 1]);
-        Math.Vector2 uv3 = Math.Vector2(nUVs[oIndices[index + 2] * 2], nUVs[oIndices[index + 2] * 2 + 1]);
+        Math.Vector2 uv1 = Math.Vector2(
+            nUVs[oIndices[index] * 2], nUVs[oIndices[index] * 2 + 1]);
+        Math.Vector2 uv2 = Math.Vector2(
+            nUVs[oIndices[index + 1] * 2], nUVs[oIndices[index + 1] * 2 + 1]);
+        Math.Vector2 uv3 = Math.Vector2(
+            nUVs[oIndices[index + 2] * 2], nUVs[oIndices[index + 2] * 2 + 1]);
         uvs.add(uv1);
         uvs.add(uv2);
         uvs.add(uv3);
@@ -648,15 +695,35 @@ class Fbx3DRenderer extends ChangeNotifier implements CustomPainter {
       final rot = widget.currentState().rotation;
       final zoom = widget.currentState().zoom.toStringAsFixed(1);
 
-      drawText(canvas, "vertices: " + verticesCount.toString(), Offset(20, ScreenUtils.height - 80));
-      drawText(canvas, "triangles: " + triangleCount.toString(), Offset(20, ScreenUtils.height - 100));
-      drawText(canvas, "endFrame: " + widget.endFrame.toString() + "  speed: " + widget.animationSpeed.toString(), Offset(20, ScreenUtils.height - 120));
+      drawText(canvas, "vertices: " + verticesCount.toString(),
+          Offset(20, ScreenUtils.height - 80));
+      drawText(canvas, "triangles: " + triangleCount.toString(),
+          Offset(20, ScreenUtils.height - 100));
+      drawText(
+          canvas,
+          "endFrame: " +
+              widget.endFrame.toString() +
+              "  speed: " +
+              widget.animationSpeed.toString(),
+          Offset(20, ScreenUtils.height - 120));
 
-      drawText(canvas, "zoom: " + zoom + " rot: (" + rot.x.toStringAsFixed(0) + ", " + rot.y.toStringAsFixed(0) + ", " + rot.z.toStringAsFixed(0) + ")",
+      drawText(
+          canvas,
+          "zoom: " +
+              zoom +
+              " rot: (" +
+              rot.x.toStringAsFixed(0) +
+              ", " +
+              rot.y.toStringAsFixed(0) +
+              ", " +
+              rot.z.toStringAsFixed(0) +
+              ")",
           Offset(20, ScreenUtils.height - 150),
           fontSize: 14);
 
-      drawText(canvas, "path: " + widget.fbxPath, Offset(20, ScreenUtils.height - 185), fontSize: 12);
+      drawText(canvas, "path: " + widget.fbxPath,
+          Offset(20, ScreenUtils.height - 185),
+          fontSize: 12);
     }
   }
 
@@ -666,7 +733,7 @@ class Fbx3DRenderer extends ChangeNotifier implements CustomPainter {
   refresh() => notifyListeners();
 
   reset() {
-    if (widget.fbx3DViewerController != null) widget.fbx3DViewerController.reset();
+    widget.fbx3DViewerController.reset();
   }
 
   @override
@@ -680,7 +747,8 @@ class Fbx3DRenderer extends ChangeNotifier implements CustomPainter {
 }
 
 //from jMonkeyEngine, normalize the weights
-_getMaxWeightsPerVertex(List<Math.Vector3> tempVertices, List<Math.Vector4> oSkinWeights) {
+_getMaxWeightsPerVertex(
+    List<Math.Vector3> tempVertices, List<Math.Vector4> oSkinWeights) {
   int maxWeightsPerVertex = 0;
 
   for (int index = 0; index < tempVertices.length; index++) {
@@ -714,8 +782,19 @@ _getMaxWeightsPerVertex(List<Math.Vector3> tempVertices, List<Math.Vector4> oSki
 class _Fbx3DBones {
   _Fbx3DBones._();
 
-  static Math.Vector3 calculateBoneVertex(vertexPosition, skinIndexX, skinIndexY, skinIndexZ, skinIndexW, skinWeightX, skinWeightY, skinWeightZ, skinWeightW, joints) {
-    Math.Vector4 p = Math.Vector4(vertexPosition.x, vertexPosition.y, vertexPosition.z, 1.0);
+  static Math.Vector3 calculateBoneVertex(
+      vertexPosition,
+      skinIndexX,
+      skinIndexY,
+      skinIndexZ,
+      skinIndexW,
+      skinWeightX,
+      skinWeightY,
+      skinWeightZ,
+      skinWeightW,
+      joints) {
+    Math.Vector4 p =
+        Math.Vector4(vertexPosition.x, vertexPosition.y, vertexPosition.z, 1.0);
 
     Math.Vector4 sp = Math.Vector4(0.0, 0.0, 0.0, 0.0);
     int index = 0;
@@ -735,8 +814,19 @@ class _Fbx3DBones {
     return sp.xyz;
   }
 
-  static Math.Vector3 calculateBoneNormal(vertexNormal, skinIndexX, skinIndexY, skinIndexZ, skinIndexW, skinWeightX, skinWeightY, skinWeightZ, skinWeightW, joints) {
-    Math.Vector3 n = Math.Vector3(vertexNormal.x, vertexNormal.y, vertexNormal.z);
+  static Math.Vector3 calculateBoneNormal(
+      vertexNormal,
+      skinIndexX,
+      skinIndexY,
+      skinIndexZ,
+      skinIndexW,
+      skinWeightX,
+      skinWeightY,
+      skinWeightZ,
+      skinWeightW,
+      joints) {
+    Math.Vector3 n =
+        Math.Vector3(vertexNormal.x, vertexNormal.y, vertexNormal.z);
 
     Math.Vector3 sn = Math.Vector3(0.0, 0.0, 0.0);
     int index = 0;

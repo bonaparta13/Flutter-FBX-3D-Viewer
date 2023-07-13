@@ -12,20 +12,19 @@ class InputBuffer {
 
   /// Create a InputStream for reading from a List<int>
   InputBuffer(List<int> buffer,
-      {this.bigEndian = false, int offset = 0, int length})
-    : buffer = buffer
-    , start = offset
-    , offset = offset
-    , end = (length == null ? buffer.length : offset + length);
+      {this.bigEndian = false, int offset = 0, int? length})
+      : buffer = buffer,
+        start = offset,
+        offset = offset,
+        end = (length == null ? buffer.length : offset + length);
 
   /// Create a copy of [other].
-  InputBuffer.from(InputBuffer other,
-      {int offset = 0, int length})
-    : buffer = other.buffer
-    , offset = other.offset + offset
-    , start = other.start
-    , end = (length == null) ? other.end : other.offset + offset + length
-    , bigEndian = other.bigEndian;
+  InputBuffer.from(InputBuffer other, {int offset = 0, int? length})
+      : buffer = other.buffer,
+        offset = other.offset + offset,
+        start = other.start,
+        end = (length == null) ? other.end : other.offset + offset + length,
+        bigEndian = other.bigEndian;
 
   ///  The current read position relative to the start of the buffer.
   int get position => offset - start;
@@ -42,10 +41,10 @@ class InputBuffer {
   }
 
   /// Access the buffer relative from the current position.
-  int operator[](int index) => buffer[offset + index];
+  int operator [](int index) => buffer[offset + index];
 
   /// Set a buffer element relative to the current position.
-  operator[]=(int index, int value) => buffer[offset + index] = value;
+  operator []=(int index, int value) => buffer[offset + index] = value;
 
   /// Copy data from [other] to this buffer, at [start] offset from the
   /// current read position, and [length] number of bytes.  [offset] is
@@ -53,10 +52,10 @@ class InputBuffer {
   void memcpy(int start, int length, dynamic other, [int offset = 0]) {
     if (other is InputBuffer) {
       buffer.setRange(this.offset + start, this.offset + start + length,
-                      other.buffer, other.offset + offset);
+          other.buffer, other.offset + offset);
     } else {
       buffer.setRange(this.offset + start, this.offset + start + length,
-                      other as List<int>, offset);
+          other as List<int>, offset);
     }
   }
 
@@ -71,12 +70,12 @@ class InputBuffer {
   /// to the start of the buffer.  If [position] is not specified, the current
   /// read position is used. If [length] is not specified, the remainder of this
   /// stream is used.
-  InputBuffer subset(int count, {int position, int offset = 0}) {
+  InputBuffer subset(int count, {int? position, int offset = 0}) {
     var pos = position != null ? start + position : this.offset;
     pos += offset;
 
-    return InputBuffer(buffer, bigEndian: bigEndian, offset: pos,
-        length: count);
+    return InputBuffer(buffer,
+        bigEndian: bigEndian, offset: pos, length: count);
   }
 
   /// Returns the position of the given [value] within the buffer, starting
@@ -85,7 +84,8 @@ class InputBuffer {
   /// was not found.
   int indexOf(int value, [int offset = 0]) {
     for (var i = this.offset + offset, end = this.offset + length;
-         i < end; ++i) {
+        i < end;
+        ++i) {
       if (buffer[i] == value) {
         return i - start;
       }
@@ -122,7 +122,7 @@ class InputBuffer {
 
   /// Read a null-terminated string, or if [len] is provided, that number of
   /// bytes returned as a string.
-  String readString([int len]) {
+  String readString([int? len]) {
     if (len == null) {
       final codes = <int>[];
       while (!isEOS) {
@@ -195,11 +195,23 @@ class InputBuffer {
     final b7 = buffer[offset++] & 0xff;
     final b8 = buffer[offset++] & 0xff;
     if (bigEndian) {
-      return (b1 << 56) | (b2 << 48) | (b3 << 40) | (b4 << 32) |
-             (b5 << 24) | (b6 << 16) | (b7 << 8) | b8;
+      return (b1 << 56) |
+          (b2 << 48) |
+          (b3 << 40) |
+          (b4 << 32) |
+          (b5 << 24) |
+          (b6 << 16) |
+          (b7 << 8) |
+          b8;
     }
-    return (b8 << 56) | (b7 << 48) | (b6 << 40) | (b5 << 32) |
-           (b4 << 24) | (b3 << 16) | (b2 << 8) | b1;
+    return (b8 << 56) |
+        (b7 << 48) |
+        (b6 << 40) |
+        (b5 << 32) |
+        (b4 << 24) |
+        (b3 << 16) |
+        (b2 << 8) |
+        b1;
   }
 
   int readInt64() {
@@ -225,15 +237,15 @@ class InputBuffer {
     return buffer.sublist(s, e);
   }
 
-  Uint8List toUint8List([int offset = 0, int length]) {
+  Uint8List toUint8List([int offset = 0, int? length]) {
     final len = length ?? this.length - offset;
     if (buffer is Uint8List) {
       final b = buffer as Uint8List;
-      return Uint8List.view(b.buffer,
-          b.offsetInBytes + this.offset + offset, len);
+      return Uint8List.view(
+          b.buffer, b.offsetInBytes + this.offset + offset, len);
     }
-    return Uint8List.fromList(buffer.sublist(this.offset + offset,
-        this.offset + offset + len));
+    return Uint8List.fromList(
+        buffer.sublist(this.offset + offset, this.offset + offset + len));
   }
 
   Uint32List toUint32List([int offset = 0]) {
